@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Password Reset</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 90%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Set New Password</h1>
+        <p>Please enter and confirm your new password.</p>
+        <input type="password" id="password" placeholder="New Password" required>
+        <input type="password" id="confirmPassword" placeholder="Confirm New Password" required>
+        <button id="resetButton">Reset Password</button>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE'; // Replace with your Supabase URL
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE'; // Replace with your Supabase Anon Key
+
+        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const resetButton = document.getElementById('resetButton');
+        const messageDiv = document.getElementById('message');
+
+        resetButton.addEventListener('click', async () => {
+            const newPassword = passwordInput.value;
+            const confirmNewPassword = confirmPasswordInput.value;
+            
+            if (newPassword !== confirmNewPassword) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Passwords do not match.';
+                return;
+            }
+
+            if (!newPassword) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Please enter a new password.';
+                return;
+            }
+
+            const { data, error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = `Error: ${error.message}`;
+            } else {
+                messageDiv.className = 'success';
+                messageDiv.textContent = 'Password has been successfully updated!';
+            }
+        });
+
+        // Optional: Check if the user is authenticated from the reset link URL
+        // Supabase session is automatically updated from the URL fragment
+        window.onload = async () => {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error || !session) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = 'Invalid or expired password reset link.';
+                resetButton.disabled = true;
+            }
+        };
+    </script>
+</body>
+</html>
