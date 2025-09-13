@@ -120,7 +120,7 @@
 
     <script>
         // Replace with your Supabase credentials
-        console.log("saudhasuh");
+        console.log("1");
 
         const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
@@ -135,6 +135,8 @@
         const strengthText = document.getElementById('strengthText');
         const confirmStrengthFill = document.getElementById('confirmStrengthFill');
         const confirmStrengthText = document.getElementById('confirmStrengthText');
+
+        console.log("2");
 
         const checkPasswordStrength = (password) => {
             let strength = 0;
@@ -165,7 +167,7 @@
             textElement.textContent = text;
             textElement.style.color = color;
         };
-
+        console.log("3");
         // Use 'change' event listener
         passwordInput.addEventListener('change', () => {
             updateStrengthBar(passwordInput.value, strengthFill, strengthText);
@@ -175,7 +177,7 @@
         confirmPasswordInput.addEventListener('change', () => {
             updateStrengthBar(confirmPasswordInput.value, confirmStrengthFill, confirmStrengthText);
         });
-
+        console.log("4");
         resetButton.addEventListener('click', async () => {
             const newPassword = passwordInput.value;
             const confirmNewPassword = confirmPasswordInput.value;
@@ -211,7 +213,7 @@
                 messageDiv.textContent = 'Password has been successfully updated!';
             }
         });
-
+        console.log("5");
         window.onload = async () => {
             const { data: { session }, error } = await supabase.auth.getSession();
             if (error || !session) {
@@ -222,6 +224,7 @@
                 confirmPasswordInput.disabled = true;
             }
         };
+        console.log("6");
     </script>
 </body>
 </html>
