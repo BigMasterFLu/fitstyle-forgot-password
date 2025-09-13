@@ -39,23 +39,14 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        .custom-input {
+        input {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
             box-sizing: border-box;
-            background-color: white;
-            min-height: 40px;
-            cursor: text;
-        }
-        .custom-input p {
-            margin: 0;
-            display: inline-block;
-            color: transparent;
-            text-shadow: 0 0 8px #000;
-            user-select: none;
+            transition: background-color 0.3s;
         }
         button {
             width: 100%;
@@ -98,16 +89,6 @@
             margin-bottom: 15px;
             text-align: left;
         }
-        .static-paragraph {
-            margin-top: 10px;
-            color: #555;
-            font-size: 14px;
-        }
-        .custom-input:focus {
-            outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-        }
     </style>
 </head>
 <body>
@@ -116,10 +97,8 @@
         <p>Please enter and confirm your new password.</p>
         
         <div class="input-container">
-            <label for="passwordBox">New Password</label>
-            <div id="passwordBox" class="custom-input" tabindex="0">
-                <p id="passwordText"></p>
-            </div>
+            <label for="password">New Password</label>
+            <input type="password" id="password" required>
             <div class="password-strength-bar">
                 <div id="strengthFill" class="password-strength-fill"></div>
             </div>
@@ -127,18 +106,13 @@
         </div>
 
         <div class="input-container">
-            <label for="confirmPasswordBox">Confirm Password</label>
-            <div id="confirmPasswordBox" class="custom-input" tabindex="0">
-                <p id="confirmPasswordText"></p>
-            </div>
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" required>
             <div class="password-strength-bar">
                 <div id="confirmStrengthFill" class="password-strength-fill"></div>
             </div>
             <div id="confirmStrengthText" class="password-strength-text"></div>
         </div>
-        
-        <p class="static-paragraph">Masked New Password: <span id="maskedNewPassword"></span></p>
-        <p class="static-paragraph">Masked Confirm Password: <span id="maskedConfirmPassword"></span></p>
 
         <button id="resetButton">Reset Password</button>
         <div id="message"></div>
@@ -151,22 +125,14 @@
 
         const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Get the custom input divs, their inner paragraphs, and other elements
-        const passwordBox = document.getElementById('passwordBox');
-        const passwordText = document.getElementById('passwordText');
-        const confirmPasswordBox = document.getElementById('confirmPasswordBox');
-        const confirmPasswordText = document.getElementById('confirmPasswordText');
-        const maskedNewPassword = document.getElementById('maskedNewPassword');
-        const maskedConfirmPassword = document.getElementById('maskedConfirmPassword');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
         const resetButton = document.getElementById('resetButton');
         const messageDiv = document.getElementById('message');
         const strengthFill = document.getElementById('strengthFill');
         const strengthText = document.getElementById('strengthText');
         const confirmStrengthFill = document.getElementById('confirmStrengthFill');
         const confirmStrengthText = document.getElementById('confirmStrengthText');
-
-        let newPassword = '';
-        let confirmNewPassword = '';
 
         const checkPasswordStrength = (password) => {
             let strength = 0;
@@ -197,39 +163,20 @@
             textElement.textContent = text;
             textElement.style.color = color;
         };
-        
-        // Function to handle keyboard input and update the UI
-        const handleKeyPress = (event, passwordVar, passwordParagraph, maskedParagraph, strengthFill, strengthText) => {
-            let tempPassword = passwordVar;
-            const key = event.key;
 
-            if (key === 'Backspace') {
-                tempPassword = tempPassword.slice(0, -1);
-            } else if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-                tempPassword += key;
-            } else {
-                return passwordVar;
-            }
-
-            passwordParagraph.textContent = tempPassword;
-            maskedParagraph.textContent = '*'.repeat(tempPassword.length);
-            updateStrengthBar(tempPassword, strengthFill, strengthText);
-            
-            event.preventDefault();
-            return tempPassword;
-        };
-
-        // Event listener for New Password box
-        passwordBox.addEventListener('keydown', (event) => {
-            newPassword = handleKeyPress(event, newPassword, passwordText, maskedNewPassword, strengthFill, strengthText);
+        // Use 'change' event listener
+        passwordInput.addEventListener('change', () => {
+            updateStrengthBar(passwordInput.value, strengthFill, strengthText);
         });
 
-        // Event listener for Confirm Password box
-        confirmPasswordBox.addEventListener('keydown', (event) => {
-            confirmNewPassword = handleKeyPress(event, confirmNewPassword, confirmPasswordText, maskedConfirmPassword, confirmStrengthFill, confirmStrengthText);
+        // Use 'change' event listener for the confirm password field
+        confirmPasswordInput.addEventListener('change', () => {
+            updateStrengthBar(confirmPasswordInput.value, confirmStrengthFill, confirmStrengthText);
         });
 
         resetButton.addEventListener('click', async () => {
+            const newPassword = passwordInput.value;
+            const confirmNewPassword = confirmPasswordInput.value;
             const strength = checkPasswordStrength(newPassword);
             
             if (newPassword !== confirmNewPassword) {
@@ -269,10 +216,8 @@
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Invalid or expired password reset link.';
                 resetButton.disabled = true;
-                passwordBox.removeAttribute('tabindex');
-                confirmPasswordBox.removeAttribute('tabindex');
-                passwordBox.style.cursor = 'not-allowed';
-                confirmPasswordBox.style.cursor = 'not-allowed';
+                passwordInput.disabled = true;
+                confirmPasswordInput.disabled = true;
             }
         };
     </script>
