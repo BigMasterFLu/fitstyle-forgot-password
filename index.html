@@ -93,7 +93,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Segasjs</h1>
+        <h1>New Password</h1>
         <p>Please enter and confirm your new password.</p>
         
         <div class="input-container">
@@ -229,19 +229,24 @@
         console.log("5");
         window.onload = async () => {
             try {
-                // Get the URL fragment
+                // Get the URL fragment and parse it
                 const fragment = window.location.hash;
                 console.log("URL Fragment:", fragment);
 
-                // Check if we have a hash in the URL
-                if (!fragment) {
-                    throw new Error('No recovery token found in URL');
+                // Parse the hash parameters
+                const hashParams = new URLSearchParams(fragment.substring(1));
+                const access_token = hashParams.get('access_token');
+                const refresh_token = hashParams.get('refresh_token');
+                const type = hashParams.get('type');
+
+                if (!access_token || type !== 'recovery') {
+                    throw new Error('Invalid recovery link parameters');
                 }
 
-                // Try to verify the recovery token
-                const { data, error } = await supabaseClient.auth.verifyOtp({
-                    token_hash: fragment.substring(1), // Remove the # from the fragment
-                    type: 'recovery'
+                // Set the session with the recovery tokens
+                const { data, error } = await supabaseClient.auth.setSession({
+                    access_token,
+                    refresh_token
                 });
 
                 if (error) {
