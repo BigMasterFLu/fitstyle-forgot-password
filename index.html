@@ -118,6 +118,7 @@
         <div id="message"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Replace with your Supabase credentials
         console.log("1");
@@ -125,7 +126,8 @@
         const SUPABASE_URL = 'https://grwplllcczmzenogoxqg.supabase.co/';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyd3BsbGxjY3ptemVub2dveHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMjMxOTcsImV4cCI6MjA2Mzc5OTE5N30.06_Nb3TBOede2kvAuZHpXfo6Tqfa0lX0Wd05L9TZc-U';
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('confirmPassword');
@@ -179,44 +181,78 @@
         });
         console.log("4");
         resetButton.addEventListener('click', async () => {
-            const newPassword = passwordInput.value;
-            const confirmNewPassword = confirmPasswordInput.value;
-            const strength = checkPasswordStrength(newPassword);
-            
-            if (newPassword !== confirmNewPassword) {
-                messageDiv.className = 'error';
-                messageDiv.textContent = 'Passwords do not match.';
-                return;
-            }
+            try {
+                const newPassword = passwordInput.value;
+                const confirmNewPassword = confirmPasswordInput.value;
+                const strength = checkPasswordStrength(newPassword);
+                
+                if (newPassword !== confirmNewPassword) {
+                    messageDiv.className = 'error';
+                    messageDiv.textContent = 'Passwords do not match.';
+                    return;
+                }
 
-            if (strength < 4) {
-                messageDiv.className = 'error';
-                messageDiv.textContent = 'Please choose a stronger password.';
-                return; 
-            }
+                if (strength < 4) {
+                    messageDiv.className = 'error';
+                    messageDiv.textContent = 'Please choose a stronger password.';
+                    return; 
+                }
 
-            if (!newPassword) {
-                messageDiv.className = 'error';
-                messageDiv.textContent = 'Please enter a new password.';
-                return;
-            }
+                if (!newPassword) {
+                    messageDiv.className = 'error';
+                    messageDiv.textContent = 'Please enter a new password.';
+                    return;
+                }
 
-            const { error } = await supabase.auth.updateUser({
-                password: newPassword
-            });
+                // Update the user's password
+                const { data, error } = await supabaseClient.auth.updateUser({
+                    password: newPassword
+                });
 
-            if (error) {
+                if (error) {
+                    throw error;
+                }
+
+                messageDiv.className = 'success';
+                messageDiv.textContent = 'Password has been successfully updated! You can now close this page.';
+                
+                // Disable inputs after successful password reset
+                resetButton.disabled = true;
+                passwordInput.disabled = true;
+                confirmPasswordInput.disabled = true;
+            } catch (error) {
+                console.error('Error:', error);
                 messageDiv.className = 'error';
                 messageDiv.textContent = `Error: ${error.message}`;
-            } else {
-                messageDiv.className = 'success';
-                messageDiv.textContent = 'Password has been successfully updated!';
             }
         });
         console.log("5");
         window.onload = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error || !session) {
+            try {
+                // Get the URL fragment
+                const fragment = window.location.hash;
+                console.log("URL Fragment:", fragment);
+
+                // Check if we have a hash in the URL
+                if (!fragment) {
+                    throw new Error('No recovery token found in URL');
+                }
+
+                // Try to verify the recovery token
+                const { data, error } = await supabaseClient.auth.verifyOtp({
+                    token_hash: fragment.substring(1), // Remove the # from the fragment
+                    type: 'recovery'
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log("Recovery verification successful:", data);
+                messageDiv.className = 'success';
+                messageDiv.textContent = 'You can now reset your password.';
+            } catch (error) {
+                console.error('Error:', error);
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Invalid or expired password reset link.';
                 resetButton.disabled = true;
