@@ -39,14 +39,23 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input {
+        .custom-input {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
             box-sizing: border-box;
-            transition: background-color 0.3s;
+            background-color: white;
+            min-height: 40px;
+            cursor: text;
+        }
+        .custom-input p {
+            margin: 0;
+            display: inline-block;
+            color: transparent;
+            text-shadow: 0 0 8px #000;
+            user-select: none;
         }
         button {
             width: 100%;
@@ -72,7 +81,6 @@
         .error {
             color: red;
         }
-        /* Password Strength Bar Styles */
         .password-strength-bar {
             width: 100%;
             height: 8px;
@@ -90,6 +98,16 @@
             margin-bottom: 15px;
             text-align: left;
         }
+        .static-paragraph {
+            margin-top: 10px;
+            color: #555;
+            font-size: 14px;
+        }
+        .custom-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -98,8 +116,10 @@
         <p>Please enter and confirm your new password.</p>
         
         <div class="input-container">
-            <label for="password">New Password</label>
-            <input type="text" id="password" required>
+            <label for="passwordBox">New Password</label>
+            <div id="passwordBox" class="custom-input" tabindex="0">
+                <p id="passwordText"></p>
+            </div>
             <div class="password-strength-bar">
                 <div id="strengthFill" class="password-strength-fill"></div>
             </div>
@@ -107,13 +127,18 @@
         </div>
 
         <div class="input-container">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="text" id="confirmPassword" required>
+            <label for="confirmPasswordBox">Confirm Password</label>
+            <div id="confirmPasswordBox" class="custom-input" tabindex="0">
+                <p id="confirmPasswordText"></p>
+            </div>
             <div class="password-strength-bar">
                 <div id="confirmStrengthFill" class="password-strength-fill"></div>
             </div>
             <div id="confirmStrengthText" class="password-strength-text"></div>
         </div>
+        
+        <p class="static-paragraph">Masked New Password: <span id="maskedNewPassword"></span></p>
+        <p class="static-paragraph">Masked Confirm Password: <span id="maskedConfirmPassword"></span></p>
 
         <button id="resetButton">Reset Password</button>
         <div id="message"></div>
@@ -121,19 +146,27 @@
 
     <script>
         // Replace with your Supabase credentials
-        const SUPABASE_URL = 'https://grwplllcczmzenogoxqg.supabase.co/';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdyd3BsbGxjY3ptemVub2dveHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMjMxOTcsImV4cCI6MjA2Mzc5OTE5N30.06_Nb3TBOede2kvAuZHpXfo6Tqfa0lX0Wd05L9TZc-U';
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
 
         const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirmPassword');
+        // Get the custom input divs, their inner paragraphs, and other elements
+        const passwordBox = document.getElementById('passwordBox');
+        const passwordText = document.getElementById('passwordText');
+        const confirmPasswordBox = document.getElementById('confirmPasswordBox');
+        const confirmPasswordText = document.getElementById('confirmPasswordText');
+        const maskedNewPassword = document.getElementById('maskedNewPassword');
+        const maskedConfirmPassword = document.getElementById('maskedConfirmPassword');
         const resetButton = document.getElementById('resetButton');
         const messageDiv = document.getElementById('message');
         const strengthFill = document.getElementById('strengthFill');
         const strengthText = document.getElementById('strengthText');
         const confirmStrengthFill = document.getElementById('confirmStrengthFill');
         const confirmStrengthText = document.getElementById('confirmStrengthText');
+
+        let newPassword = '';
+        let confirmNewPassword = '';
 
         const checkPasswordStrength = (password) => {
             let strength = 0;
@@ -149,6 +182,7 @@
             const strength = checkPasswordStrength(password);
             let color = '';
             let text = '';
+            const fillWidth = (password.length === 0) ? '0%' : `${(strength / 5) * 100}%`;
 
             switch(strength) {
                 case 5: color = '#4CAF50'; text = 'Strong'; break;
@@ -158,29 +192,44 @@
                 default: color = '#F44336'; text = 'Very Weak'; break;
             }
 
-            fillElement.style.width = `${(strength / 5) * 100}%`;
+            fillElement.style.width = fillWidth;
             fillElement.style.backgroundColor = color;
             textElement.textContent = text;
             textElement.style.color = color;
         };
+        
+        // Function to handle keyboard input and update the UI
+        const handleKeyPress = (event, passwordVar, passwordParagraph, maskedParagraph, strengthFill, strengthText) => {
+            let tempPassword = passwordVar;
+            const key = event.key;
 
-        // Event listener for password input (using keyup)
-        passwordInput.addEventListener('keyup', () => {
-            updateStrengthBar(passwordInput.value, strengthFill, strengthText);
-            passwordInput.style.backgroundColor = 'black'; 
-            passwordInput.style.color = 'white';
+            if (key === 'Backspace') {
+                tempPassword = tempPassword.slice(0, -1);
+            } else if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                tempPassword += key;
+            } else {
+                return passwordVar;
+            }
+
+            passwordParagraph.textContent = tempPassword;
+            maskedParagraph.textContent = '*'.repeat(tempPassword.length);
+            updateStrengthBar(tempPassword, strengthFill, strengthText);
+            
+            event.preventDefault();
+            return tempPassword;
+        };
+
+        // Event listener for New Password box
+        passwordBox.addEventListener('keydown', (event) => {
+            newPassword = handleKeyPress(event, newPassword, passwordText, maskedNewPassword, strengthFill, strengthText);
         });
 
-        // Event listener for confirm password input (using keyup)
-        confirmPasswordInput.addEventListener('keyup', () => {
-            updateStrengthBar(confirmPasswordInput.value, confirmStrengthFill, confirmStrengthText);
-            confirmPasswordInput.style.backgroundColor = 'white';
-            confirmPasswordInput.style.color = 'black';
+        // Event listener for Confirm Password box
+        confirmPasswordBox.addEventListener('keydown', (event) => {
+            confirmNewPassword = handleKeyPress(event, confirmNewPassword, confirmPasswordText, maskedConfirmPassword, confirmStrengthFill, confirmStrengthText);
         });
 
         resetButton.addEventListener('click', async () => {
-            const newPassword = passwordInput.value;
-            const confirmNewPassword = confirmPasswordInput.value;
             const strength = checkPasswordStrength(newPassword);
             
             if (newPassword !== confirmNewPassword) {
@@ -220,8 +269,10 @@
                 messageDiv.className = 'error';
                 messageDiv.textContent = 'Invalid or expired password reset link.';
                 resetButton.disabled = true;
-                passwordInput.disabled = true;
-                confirmPasswordInput.disabled = true;
+                passwordBox.removeAttribute('tabindex');
+                confirmPasswordBox.removeAttribute('tabindex');
+                passwordBox.style.cursor = 'not-allowed';
+                confirmPasswordBox.style.cursor = 'not-allowed';
             }
         };
     </script>
